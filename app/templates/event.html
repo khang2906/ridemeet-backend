@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ event.title }} — Göle</title>
+    {% if event.lat and event.lng %}
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        #map { height: 300px; width: 100%; margin-top: 8px; }
+    </style>
+    {% endif %}
 </head>
 <body>
     <a href="/">← Back to events</a>
@@ -13,6 +19,9 @@
     <p>Sport: {{ event.sport }}</p>
     <p>Date: {{ event.date.strftime("%d.%m.%Y %H:%M") }}</p>
     <p>Meeting point: {{ event.meeting_point }}</p>
+    {% if event.lat and event.lng %}
+    <div id="map"></div>
+    {% endif %}
     <p>Pace: {{ event.pace }}</p>
 
     {% if event.description %}
@@ -46,5 +55,15 @@
         </p>
         <button type="submit">RSVP</button>
     </form>
+    {% if event.lat and event.lng %}
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const map = L.map('map').setView([{{ event.lat }}, {{ event.lng }}], 14);
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        L.marker([{{ event.lat }}, {{ event.lng }}]).addTo(map);
+    </script>
+    {% endif %}
 </body>
 </html>

@@ -59,6 +59,8 @@ async def create_event(
     max_participants: str | None = Form(None),
     route_link: str | None = Form(None),
     description: str | None = Form(None),
+    lat: str | None = Form(None),
+    lng: str | None = Form(None),
 ):
     """Save a new event from submitted form data, then redirect to its detail page."""
     event = Event(
@@ -71,6 +73,8 @@ async def create_event(
         max_participants=int(max_participants) if max_participants else None,
         route_link=route_link or None,
         description=description or None,
+        lat=float(lat) if lat else None,
+        lng=float(lng) if lng else None,
     )
     db.add(event)
     db.commit()
