@@ -7,8 +7,34 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         #map { height: 300px; width: 100%; margin-top: 8px; }
-        #meeting_point_row { display: flex; gap: 8px; }
-        #meeting_point_row input { flex: 1; }
+
+        #meeting_point_wrapper { position: relative; }
+        #meeting_point { width: 100%; box-sizing: border-box; }
+
+        #autocomplete {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ccc;
+            border-top: none;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            z-index: 1000;
+        }
+        #autocomplete li {
+            padding: 8px;
+            cursor: pointer;
+            font-size: 0.9em;
+            border-bottom: 1px solid #eee;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        #autocomplete li:hover { background: #f0f0f0; }
+        #autocomplete:empty { display: none; }
     </style>
 </head>
 <body>
@@ -37,11 +63,13 @@
         </p>
 
         <p>
-            <label>Meeting point — type and press Enter to search, or click the map</label>
-            <span id="meeting_point_row">
-                <input type="text" name="meeting_point" id="meeting_point" required>
-                <button type="button" id="search_btn">Search</button>
-            </span>
+            <label>Meeting point</label>
+            <div id="meeting_point_wrapper">
+                <input type="text" name="meeting_point" id="meeting_point"
+                       placeholder="Type to search, or click the map" required autocomplete="off">
+                <!-- Autocomplete suggestions are injected here by JS. -->
+                <ul id="autocomplete"></ul>
+            </div>
         </p>
         <div id="map"></div>
 
@@ -81,6 +109,8 @@
         }).addTo(map);
 
         let marker = null;
+        const input = document.getElementById('meeting_point');
+        const autocompleteList = document.getElementById('autocomplete');
 
         function setPin(lat, lng) {
             if (marker) {
@@ -92,46 +122,78 @@
             document.getElementById('lng').value = lng;
         }
 
-        // Forward geocode: place name → coordinates.
-        function search() {
-            const query = document.getElementById('meeting_point').value.trim();
-            if (!query) return;
-
-            fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`)
-                .then(r => r.json())
-                .then(results => {
-                    if (results.length === 0) {
-                        alert('No results found. Try a more specific search.');
-                        return;
-                    }
-                    const place = results[0];
-                    const lat = parseFloat(place.lat);
-                    const lng = parseFloat(place.lon);
-                    setPin(lat, lng);
-                    map.setView([lat, lng], 14);
-                });
+        function clearSuggestions() {
+            autocompleteList.innerHTML = '';
         }
 
-        document.getElementById('search_btn').addEventListener('click', search);
+        function selectSuggestion(place) {
+            input.value = place.display_name;
+            clearSuggestions();
+            const lat = parseFloat(place.lat);
+            const lng = parseFloat(place.lon);
+            setPin(lat, lng);
+            map.setView([lat, lng], 14);
+        }
 
-        document.getElementById('meeting_point').addEventListener('keydown', function(e) {
+        function showSuggestions(results) {
+            clearSuggestions();
+            results.forEach(place => {
+                const li = document.createElement('li');
+                li.textContent = place.display_name;
+                // mousedown fires before the input's blur event, so the click
+                // registers before the list disappears.
+                li.addEventListener('mousedown', function(e) {
+                    e.preventDefault();
+                    selectSuggestion(place);
+                });
+                autocompleteList.appendChild(li);
+            });
+        }
+
+        // Debounce: wait 300ms after the user stops typing before fetching.
+        // Without this we'd fire a request on every single keystroke.
+        let debounceTimer = null;
+        input.addEventListener('input', function() {
+            clearTimeout(debounceTimer);
+            const query = input.value.trim();
+            if (query.length < 3) {
+                clearSuggestions();
+                return;
+            }
+            debounceTimer = setTimeout(function() {
+                fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5`)
+                    .then(r => r.json())
+                    .then(showSuggestions);
+            }, 300);
+        });
+
+        // Hide suggestions when the input loses focus.
+        input.addEventListener('blur', clearSuggestions);
+
+        // Enter key: pick the first suggestion if any, otherwise do nothing.
+        input.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
-                e.preventDefault();  // don't submit the form
-                search();
+                e.preventDefault();
+                const first = autocompleteList.querySelector('li');
+                if (first) first.dispatchEvent(new MouseEvent('mousedown'));
+            }
+            if (e.key === 'Escape') {
+                clearSuggestions();
             }
         });
 
-        // Clicking the map places the pin and reverse geocodes to fill the meeting point field.
+        // Clicking the map places the pin and reverse geocodes to fill the field.
         map.on('click', function(e) {
             const lat = e.latlng.lat;
             const lng = e.latlng.lng;
             setPin(lat, lng);
+            clearSuggestions();
 
             fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
                 .then(r => r.json())
                 .then(result => {
                     if (result && result.display_name) {
-                        document.getElementById('meeting_point').value = result.display_name;
+                        input.value = result.display_name;
                     }
                 });
         });
