@@ -52,11 +52,14 @@ class EventCreate(BaseModel):
     date: datetime
     meeting_point: str
     pace: str
+    # Required (unlike on Event/EventResponse) so every new event gets a real map
+    # pin — enforced here at creation time rather than with a DB migration, since
+    # the column itself stays nullable for old rows created before this rule existed.
+    lat: float
+    lng: float
     max_participants: int | None = None
     route_link: str | None = None
     description: str | None = None
-    lat: float | None = None
-    lng: float | None = None
 
 
 class RsvpCreate(BaseModel):
