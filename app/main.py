@@ -18,12 +18,16 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 # Allow the Next.js frontend to call this API from the browser.
-# FRONTEND_ORIGIN should be set to the real deployed frontend URL in production;
-# defaults to the local dev server so nothing needs configuring locally.
-frontend_origin = os.getenv("FRONTEND_ORIGIN", "http://localhost:3000")
+# FRONTEND_ORIGIN should be set to the real deployed frontend URL in
+# production (comma-separated if there's more than one). Defaults to the
+# local dev server plus the dev machine's LAN IP, so testing from a phone
+# on the same WiFi (http://<lan-ip>:3000) works without extra setup.
+frontend_origins = os.getenv(
+    "FRONTEND_ORIGIN", "http://localhost:3000,http://192.168.178.126:3000"
+).split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[frontend_origin],
+    allow_origins=frontend_origins,
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )

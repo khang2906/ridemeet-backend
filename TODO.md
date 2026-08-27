@@ -5,12 +5,17 @@
 - [x] Database: SQLAlchemy models + SQLite setup
 - [x] Event detail page
 - [x] Event creation form
-- [ ] Map showing meeting point (Leaflet + OpenStreetMap)
+- [x] Map showing meeting point (Leaflet + OpenStreetMap)
 - [x] RSVP form (name only, no account)
 - [x] RSVP list on event detail page
 - [x] Filter event list by sport (city filter deferred — location will become structured via picker)
-- [ ] Set up DB migrations (Alembic) — BLOCKER before deploy: once real
-      users exist we can't rebuild the DB to apply schema changes
+- [x] Set up DB migrations (Alembic)
+- [x] Rebuild frontend in Next.js + React + Tailwind + shadcn/ui — Komoot-style:
+      full-height map, floating collapsible list panel (desktop) / draggable
+      bottom sheet (mobile), floating detail panel with RSVP on selection
+- [ ] Mobile layout check on a real iPhone — fixing as issues turn up (most
+      recent: `h-screen` → `h-dvh` on the homepage, since iOS Safari's
+      address bar made `100vh` taller than the visible viewport)
 - [ ] Deploy to Fly.io or Railway
 
 ## v1 refinements to consider
@@ -22,4 +27,3 @@
 
 - [ ] GPX file upload and display (explicitly out of scope for v1)
 - [ ] User accounts and authentication
-- [ ] Rebuild frontend in Next.js + React + Tailwind + shadcn/ui
