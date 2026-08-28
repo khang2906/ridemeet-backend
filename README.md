@@ -1,4 +1,4 @@
-# Göle
+# RideMeet
 
 A web app for organizing group meetups for cyclists, motorcyclists, and
 runners. Post an event with a sport, date, meeting point, route, and pace —
