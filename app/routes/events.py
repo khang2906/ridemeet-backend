@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import EVENT_GRACE_PERIOD, Event
+from app.timeutils import to_utc, utc_now
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -20,10 +21,9 @@ async def index(
 ):
     """Render the homepage with upcoming events, optionally filtered by sport."""
     # Upcoming events, plus ones that started within the grace period so a ride
-    # in progress doesn't vanish from the list. naive datetime.now() matches how
-    # dates are stored; revisit when deploying, since a UTC server would drop
-    # Munich-evening rides hours early.
-    cutoff = datetime.now() - EVENT_GRACE_PERIOD
+    # in progress doesn't vanish from the list. Both sides are UTC, so this is
+    # correct regardless of what timezone the server happens to run in.
+    cutoff = utc_now() - EVENT_GRACE_PERIOD
     query = db.query(Event).filter(Event.date >= cutoff).order_by(Event.date)
     if sport:
         query = query.filter(Event.sport == sport)
@@ -57,7 +57,9 @@ async def create_event(
     event = Event(
         sport=sport,
         title=title,
-        date=datetime.fromisoformat(date),
+        # The Jinja form posts a bare wall clock with no offset, so this is
+        # read as Munich local time and converted before storing.
+        date=to_utc(datetime.fromisoformat(date)),
         meeting_point=meeting_point,
         pace=pace,
         max_participants=int(max_participants) if max_participants else None,

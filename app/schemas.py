@@ -1,9 +1,24 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 
 
-class RsvpResponse(BaseModel):
+class UtcDatetimeMixin:
+    """Guarantees outgoing datetimes carry an explicit UTC offset.
+
+    Stored values come back naive from SQLite (it has no timezone-aware type),
+    and a naive ISO string is parsed by JavaScript as *local* time — so an event
+    at 16:30 UTC would render as 16:30 Munich instead of 18:30. Tagging them
+    here makes the API contract unambiguous no matter what the database returns.
+    """
+
+    @field_validator("date", "created_at", mode="after", check_fields=False)
+    @classmethod
+    def _assume_utc(cls, value: datetime) -> datetime:
+        return value.replace(tzinfo=timezone.utc) if value.tzinfo is None else value
+
+
+class RsvpResponse(UtcDatetimeMixin, BaseModel):
     id: int
     event_id: int
     name: str
@@ -14,7 +29,7 @@ class RsvpResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class EventResponse(BaseModel):
+class EventResponse(UtcDatetimeMixin, BaseModel):
     id: int
     sport: str
     title: str
@@ -31,7 +46,7 @@ class EventResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class EventListItem(BaseModel):
+class EventListItem(UtcDatetimeMixin, BaseModel):
     """Lighter shape for the list endpoint — omits rsvps to avoid N+1 bloat."""
     id: int
     sport: str

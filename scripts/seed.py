@@ -23,12 +23,18 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app.database import SessionLocal  # noqa: E402
 from app.models import RSVP, Event  # noqa: E402
+from app.timeutils import to_utc  # noqa: E402
 
 
 def at(days: int, hour: int, minute: int = 0) -> datetime:
-    """A datetime `days` from now, at the given wall-clock time."""
+    """`days` from now at the given Munich wall-clock time, stored as UTC.
+
+    The hour is the one a rider would read on a poster ("meet at 18:30"), so it
+    is built in local time first and converted — not treated as UTC directly.
+    """
     target = datetime.now() + timedelta(days=days)
-    return target.replace(hour=hour, minute=minute, second=0, microsecond=0)
+    local = target.replace(hour=hour, minute=minute, second=0, microsecond=0)
+    return to_utc(local)
 
 
 # (event fields, list of RSVP names)

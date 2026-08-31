@@ -10,6 +10,7 @@ from sqlalchemy import DateTime, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+from app.timeutils import utc_now
 
 
 class Event(Base):
@@ -18,7 +19,10 @@ class Event(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     sport: Mapped[str] = mapped_column(String)  # "bike", "motorcycle", or "run"
     title: Mapped[str] = mapped_column(String)
-    date: Mapped[datetime] = mapped_column(DateTime)
+    # timezone=True is a real TIMESTAMPTZ on Postgres. On SQLite it's a no-op —
+    # values come back naive — so the UTC-everywhere rule is a convention here
+    # and only becomes enforced by the database after the Postgres migration.
+    date: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     meeting_point: Mapped[str] = mapped_column(String)
     route_link: Mapped[str | None] = mapped_column(String, nullable=True)
     description: Mapped[str | None] = mapped_column(String, nullable=True)
@@ -39,6 +43,8 @@ class RSVP(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     event_id: Mapped[int] = mapped_column(ForeignKey("events.id"))
     name: Mapped[str] = mapped_column(String)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now
+    )
 
     event: Mapped["Event"] = relationship(back_populates="rsvps")
