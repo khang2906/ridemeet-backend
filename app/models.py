@@ -1,4 +1,10 @@
-from datetime import datetime
+from datetime import datetime, timedelta
+
+# How long an event stays in the list after it has started. A ride is most
+# relevant while it's happening — someone running late still needs the
+# meeting point — so a strict "future only" filter hides it at the worst
+# moment. There's no end-time field, so this window is a deliberate guess.
+EVENT_GRACE_PERIOD = timedelta(hours=3)
 
 from sqlalchemy import DateTime, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship

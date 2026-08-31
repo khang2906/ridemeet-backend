@@ -6,7 +6,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Event
+from app.models import EVENT_GRACE_PERIOD, Event
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -19,7 +19,12 @@ async def index(
     db: Session = Depends(get_db),
 ):
     """Render the homepage with upcoming events, optionally filtered by sport."""
-    query = db.query(Event).order_by(Event.date)
+    # Upcoming events, plus ones that started within the grace period so a ride
+    # in progress doesn't vanish from the list. naive datetime.now() matches how
+    # dates are stored; revisit when deploying, since a UTC server would drop
+    # Munich-evening rides hours early.
+    cutoff = datetime.now() - EVENT_GRACE_PERIOD
+    query = db.query(Event).filter(Event.date >= cutoff).order_by(Event.date)
     if sport:
         query = query.filter(Event.sport == sport)
     return templates.TemplateResponse(

@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Event, RSVP
+from app.models import EVENT_GRACE_PERIOD, Event, RSVP
 from app.schemas import EventCreate, EventListItem, EventResponse, RsvpCreate, RsvpResponse
 
 router = APIRouter(prefix="/api")
@@ -16,7 +16,12 @@ async def list_events(
     db: Session = Depends(get_db),
 ) -> list[Event]:
     """Return upcoming events, optionally filtered by sport."""
-    query = db.query(Event).order_by(Event.date)
+    # Upcoming events, plus ones that started within the grace period so a ride
+    # in progress doesn't vanish from the list. naive datetime.now() matches how
+    # dates are stored; revisit when deploying, since a UTC server would drop
+    # Munich-evening rides hours early.
+    cutoff = datetime.now() - EVENT_GRACE_PERIOD
+    query = db.query(Event).filter(Event.date >= cutoff).order_by(Event.date)
     if sport:
         query = query.filter(Event.sport == sport)
     return query.all()
