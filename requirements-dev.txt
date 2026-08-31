@@ -1,0 +1,7 @@
+# Test-only dependencies. Kept out of requirements.txt so a production install
+# doesn't pull pytest and its tree onto the server.
+#
+#   python -m pip install -r requirements.txt -r requirements-dev.txt
+#   python -m pytest
+pytest==9.1.1
+httpx==0.28.1
