@@ -38,6 +38,17 @@
 
 ## v1 refinements to consider
 
+- [ ] **Compare map behaviour on selecting an event: pan-only vs. fly-to-zoom.**
+      Currently `PanToSelected` only pans, keeping the zoom level fixed. Chosen
+      because the list is filtered to the map viewport, so zooming in on
+      selection would collapse the list to the one event just clicked. The cost:
+      from a zoomed-out view the marker is panned to the centre but stays small
+      and easy to miss, and the "fly in to see where this is" effect is gone.
+      The alternative is to restore `flyTo(..., 15)` and have the bounds watcher
+      ignore programmatic moves (set a ref before the call, skip the `moveend`
+      it triggers) — more code, better zoom behaviour. Try both on a phone and
+      pick; this note exists because the choice was made on reasoning, not feel.
+
 - [ ] Pace field: switch from label (relaxed/moderate/fast) to km/h range (e.g. 25–30 km/h)
 - [ ] Enforce max_participants on RSVP, plus a waitlist that auto-promotes when someone cancels
 
