@@ -41,6 +41,11 @@ def client(db_session):
     # get_db is a FastAPI dependency, so it can be swapped without the routes
     # knowing — this is what dependency injection buys you at test time.
     app.dependency_overrides[get_db] = lambda: db_session
-    with TestClient(app) as test_client:
-        yield test_client
-    app.dependency_overrides.clear()
+    try:
+        with TestClient(app) as test_client:
+            yield test_client
+    finally:
+        # try/finally, so a failure constructing TestClient (a broken lifespan,
+        # say) can't leave the override in place for every later test — that
+        # would bury the real error under a cascade of unrelated failures.
+        app.dependency_overrides.clear()

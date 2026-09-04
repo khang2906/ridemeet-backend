@@ -33,7 +33,13 @@ class Event(Base):
 
     # cascade="all, delete-orphan" means RSVPs are removed when their event is deleted
     rsvps: Mapped[list["RSVP"]] = relationship(
-        back_populates="event", cascade="all, delete-orphan"
+        back_populates="event",
+        cascade="all, delete-orphan",
+        # Without this SQLAlchemy emits no ORDER BY, and SQL guarantees nothing
+        # about row order in that case. SQLite happens to return insertion order;
+        # Postgres does not promise to, so the attendee list could silently
+        # reshuffle between page loads after the migration.
+        order_by="RSVP.id",
     )
 
 
