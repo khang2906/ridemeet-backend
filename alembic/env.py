@@ -12,12 +12,17 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from app.database import Base
+from app.database import Base, get_database_url
 from app import models  # noqa: F401 — importing registers Event/RSVP on Base.metadata
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
+
+# Overrides whatever alembic.ini has on disk with the same DATABASE_URL the
+# app itself reads — so migrations and the running app can never point at two
+# different databases just because one file was updated and the other wasn't.
+config.set_main_option("sqlalchemy.url", get_database_url())
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

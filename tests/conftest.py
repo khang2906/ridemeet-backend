@@ -1,9 +1,19 @@
 """Shared test fixtures.
 
 Every test gets a fresh, empty, in-memory database. Nothing here ever touches
-`groupride.db` — tests that could delete your real events would be tests you'd
-avoid running.
+`groupride.db` (or Postgres) — tests that could delete your real events would
+be tests you'd avoid running.
 """
+
+import os
+
+# app.database requires DATABASE_URL to exist at import time (see its
+# docstring for why: a missing var should fail loudly, not fall back
+# silently). setdefault, not straight assignment, so a real value already in
+# the environment — a CI runner mimicking production, say — isn't clobbered.
+# The value itself is never used: db_session/client below replace the app's
+# real engine entirely before any test runs.
+os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
 
 import pytest
 from fastapi.testclient import TestClient
